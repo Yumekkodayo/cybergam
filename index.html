@@ -2,8 +2,15 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER-BET // PROTOCOL v5.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CYBER-BET</title>
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#050505">
+    
+    <link rel="manifest" href='data:application/manifest+json,{"name":"CYBER-BET","short_name":"CYBER-BET","start_url":".","display":"standalone","background_color":"#050505","theme_color":"#050505","orientation":"portrait"}'>
     
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
@@ -14,25 +21,28 @@
             --neon-green: #00ff41;
             --neon-yellow: #ffee00;
             --dark-bg: #050505;
-            --panel-bg: rgba(10, 15, 20, 0.85);
+            --panel-bg: rgba(10, 15, 20, 0.9);
             --border-width: 2px;
             --scan-line-color: rgba(0, 243, 255, 0.03);
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Share Tech Mono', monospace;
             background-color: var(--dark-bg);
             color: var(--neon-cyan);
             margin: 0;
-            padding: 20px;
+            /* 針對全螢幕的手機瀏海適配 */
+            padding: max(20px, env(safe-area-inset-top)) 20px 40px 20px;
             min-height: 100vh;
             background-image: 
                 linear-gradient(0deg, transparent 24%, var(--scan-line-color) 25%, var(--scan-line-color) 26%, transparent 27%, transparent 74%, var(--scan-line-color) 75%, var(--scan-line-color) 76%, transparent 77%, transparent),
                 linear-gradient(90deg, transparent 24%, var(--scan-line-color) 25%, var(--scan-line-color) 26%, transparent 27%, transparent 74%, var(--scan-line-color) 75%, var(--scan-line-color) 76%, transparent 77%, transparent);
             background-size: 50px 50px;
             overflow-x: hidden;
+            /* 防止下拉刷新破壞沉浸感 */
+            overscroll-behavior-y: none;
         }
 
         /* 掃描線動畫 Overlay */
@@ -113,17 +123,9 @@
             margin-bottom: 20px;
             position: relative;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            /* 角落裝飾 */
-            clip-path: polygon(
-                0 0, 
-                100% 0, 
-                100% calc(100% - 20px), 
-                calc(100% - 20px) 100%, 
-                0 100%
-            ); 
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%); 
         }
 
-        /* 角落發光線條裝飾 (Pseudo elements don't work well with clip-path parent, using border tricks instead) */
         .cyber-panel::before {
             content: '';
             position: absolute;
@@ -159,6 +161,8 @@
             font-size: 1.1rem;
             outline: none;
             transition: 0.3s;
+            /* 防止 iOS 縮放 */
+            font-size: 16px; 
         }
 
         input:focus, select:focus {
@@ -198,7 +202,7 @@
         }
 
         /* 結果顯示區 */
-        .result-box { display: none; margin-top: 30px; animation: slideUp 0.5s ease forwards; }
+        .result-box { display: none; margin-top: 30px; padding-bottom: 50px; animation: slideUp 0.5s ease forwards; }
         
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(20px); }
@@ -308,7 +312,7 @@
 <body>
 
 <div class="container">
-    <h1>CYBER-BET<br><span style="font-size:0.5em; opacity:0.7;">DECISION PROTOCOL v5.0</span></h1>
+    <h1>CYBER-BET<br><span style="font-size:0.5em; opacity:0.7;">DECISION PROTOCOL v5.1</span></h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab(2)">SEC-02 // DUAL</button>
@@ -440,7 +444,7 @@
 </div>
 
 <script>
-    // --- CORE LOGIC (V4.1) ---
+    // --- CORE LOGIC (V5.1) ---
     const config = { 'S': { w: 5, p: 0.75 }, 'A': { w: 3, p: 0.60 }, 'B': { w: 1, p: 0.50 }, 'C': { w: 0, p: 0.30 } };
     const budget = 30;
 

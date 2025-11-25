@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-BET // PROTOCOL v5.0</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff41;
+            --neon-yellow: #ffee00;
+            --dark-bg: #050505;
+            --panel-bg: rgba(10, 15, 20, 0.85);
+            --border-width: 2px;
+            --scan-line-color: rgba(0, 243, 255, 0.03);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: var(--dark-bg);
+            color: var(--neon-cyan);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, var(--scan-line-color) 25%, var(--scan-line-color) 26%, transparent 27%, transparent 74%, var(--scan-line-color) 75%, var(--scan-line-color) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, var(--scan-line-color) 25%, var(--scan-line-color) 26%, transparent 27%, transparent 74%, var(--scan-line-color) 75%, var(--scan-line-color) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            overflow-x: hidden;
+        }
+
+        /* 掃描線動畫 Overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .container { 
+            max-width: 650px; 
+            margin: 0 auto; 
+            position: relative; 
+            z-index: 3; 
+        }
+
+        /* 標題與 Glitch 效果 */
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 25px;
+            color: #fff;
+            text-shadow: 2px 2px 0px var(--neon-pink), -2px -2px 0px var(--neon-cyan);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        h1::after {
+            content: "SYSTEM ONLINE";
+            display: block;
+            font-size: 0.6rem;
+            letter-spacing: 5px;
+            color: var(--neon-green);
+            margin-top: 5px;
+        }
+
+        /* TAB 切換 */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--neon-cyan);
+            padding-bottom: 10px;
+            gap: 15px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            color: rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%);
+        }
+
+        .tab-btn.active {
+            background: rgba(0, 243, 255, 0.15);
+            color: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            text-shadow: 0 0 8px var(--neon-cyan);
+            box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        /* 賽博卡片容器 */
+        .cyber-panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            /* 角落裝飾 */
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% calc(100% - 20px), 
+                calc(100% - 20px) 100%, 
+                0 100%
+            ); 
+        }
+
+        /* 角落發光線條裝飾 (Pseudo elements don't work well with clip-path parent, using border tricks instead) */
+        .cyber-panel::before {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 20px; height: 2px;
+            background: var(--neon-cyan);
+            transform: rotate(-45deg);
+            transform-origin: 0 0;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* 輸入框組 */
+        .input-group { margin-bottom: 15px; }
+        .row { display: flex; gap: 10px; }
+        
+        label {
+            color: var(--neon-pink);
+            font-size: 0.8rem;
+            display: block;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, select {
+            width: 100%;
+            background: rgba(0,0,0,0.6);
+            border: none;
+            border-bottom: 2px solid #333;
+            color: #fff;
+            padding: 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-bottom-color: var(--neon-cyan);
+            background: rgba(0, 243, 255, 0.05);
+            box-shadow: 0 5px 10px -5px rgba(0, 243, 255, 0.3);
+        }
+
+        /* 按鈕特效 */
+        .cyber-btn {
+            width: 100%;
+            padding: 18px;
+            margin-top: 10px;
+            background: transparent;
+            color: var(--neon-yellow);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.1rem;
+            border: 2px solid var(--neon-yellow);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.2s;
+            clip-path: polygon(0 0, 95% 0, 100% 30%, 100% 100%, 5% 100%, 0 70%);
+        }
+
+        .cyber-btn:hover {
+            background: var(--neon-yellow);
+            color: #000;
+            box-shadow: 0 0 25px var(--neon-yellow);
+        }
+
+        .cyber-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 結果顯示區 */
+        .result-box { display: none; margin-top: 30px; animation: slideUp 0.5s ease forwards; }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            color: #fff;
+            border-bottom: 1px dashed #555;
+            padding-bottom: 5px;
+            margin: 25px 0 10px 0;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* 投注卡片 */
+        .bet-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+            border-left: 3px solid #333;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: 0.3s;
+        }
+
+        .bet-row.highlight {
+            border-left-color: var(--neon-yellow);
+            background: rgba(255, 238, 0, 0.05);
+            box-shadow: inset 10px 0 20px -10px rgba(255, 238, 0, 0.2);
+        }
+
+        .bet-name { font-size: 1rem; color: #fff; font-weight: bold; }
+        .bet-rate { font-size: 0.8rem; color: var(--neon-pink); margin-left: 5px; }
+        .bet-val { font-size: 1.5rem; color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan); }
+        .bet-unit { font-size: 0.7rem; color: #888; }
+
+        /* 數據網格 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            margin-top: 8px;
+            text-align: right;
+        }
+        .stat-label { font-size: 0.7rem; color: #666; }
+        .stat-num { font-size: 0.95rem; }
+        
+        .c-profit { color: var(--neon-yellow); }
+        .c-pos { color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+        .c-neg { color: var(--neon-pink); text-shadow: 0 0 5px var(--neon-pink); }
+
+        /* 情境小條 */
+        .scenario-bar {
+            background: rgba(0,0,0,0.3);
+            margin-top: 8px;
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* 3場模式網格 */
+        .sc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .sc-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #333;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .sc-full {
+            grid-column: span 2;
+            border-color: var(--neon-green);
+            background: rgba(0, 255, 65, 0.05);
+        }
+
+        /* 總結大面板 */
+        .total-panel {
+            margin-top: 30px;
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0, 243, 255, 0.1) 100%);
+            border-top: 2px solid var(--neon-cyan);
+            border-bottom: 2px solid var(--neon-cyan);
+        }
+
+        .total-val {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 10px 0;
+            text-shadow: 0 0 15px currentColor;
+        }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>CYBER-BET<br><span style="font-size:0.5em; opacity:0.7;">DECISION PROTOCOL v5.0</span></h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(2)">SEC-02 // DUAL</button>
+        <button class="tab-btn" onclick="switchTab(3)">SEC-03 // PATENT</button>
+    </div>
+
+    <div id="view-2" class="view-section active">
+        <div class="cyber-panel">
+            <div class="input-group">
+                <label>TARGET 01 // DATA</label>
+                <div class="row">
+                    <input type="number" id="2g_odd1" placeholder="ODDS" step="0.01">
+                    <select id="2g_rate1">
+                        <option value="S">CLASS S (75%)</option>
+                        <option value="A" selected>CLASS A (60%)</option>
+                        <option value="B">CLASS B (50%)</option>
+                        <option value="C">CLASS C (DROP)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>TARGET 02 // DATA</label>
+                <div class="row">
+                    <input type="number" id="2g_odd2" placeholder="ODDS" step="0.01">
+                    <select id="2g_rate2">
+                        <option value="S">CLASS S (75%)</option>
+                        <option value="A" selected>CLASS A (60%)</option>
+                        <option value="B">CLASS B (50%)</option>
+                        <option value="C">CLASS C (DROP)</option>
+                    </select>
+                </div>
+            </div>
+            <button class="cyber-btn" onclick="calc2Game()">INITIATE SEQUENCE</button>
+        </div>
+
+        <div id="res-2" class="result-box">
+            
+            <div id="card_2g1" class="bet-row">
+                <div style="flex:1;">
+                    <div class="bet-name">TARGET 01 <span class="bet-rate" id="info_2g1"></span></div>
+                    <div class="stats-grid">
+                        <div><div class="stat-label">WIN NET</div><div class="stat-num c-profit" id="prof_2g1">0</div></div>
+                        <div><div class="stat-label">MATH EV</div><div class="stat-num" id="ev_2g1">0</div></div>
+                    </div>
+                    <div class="scenario-bar">
+                        <span style="opacity:0.6;">SCENARIO: G1 ONLY</span>
+                        <span id="sc_2g1">0</span>
+                    </div>
+                </div>
+                <div style="text-align:right; margin-left:15px; min-width:80px;">
+                    <div class="bet-val" id="bet_2g1">0</div>
+                    <div class="bet-unit">UNITS</div>
+                </div>
+            </div>
+
+            <div id="card_2g2" class="bet-row">
+                <div style="flex:1;">
+                    <div class="bet-name">TARGET 02 <span class="bet-rate" id="info_2g2"></span></div>
+                    <div class="stats-grid">
+                        <div><div class="stat-label">WIN NET</div><div class="stat-num c-profit" id="prof_2g2">0</div></div>
+                        <div><div class="stat-label">MATH EV</div><div class="stat-num" id="ev_2g2">0</div></div>
+                    </div>
+                    <div class="scenario-bar">
+                        <span style="opacity:0.6;">SCENARIO: G2 ONLY</span>
+                        <span id="sc_2g2">0</span>
+                    </div>
+                </div>
+                <div style="text-align:right; margin-left:15px; min-width:80px;">
+                    <div class="bet-val" id="bet_2g2">0</div>
+                    <div class="bet-unit">UNITS</div>
+                </div>
+            </div>
+
+            <div id="card_2parlay" class="bet-row">
+                <div style="flex:1;">
+                    <div class="bet-name">LINKED (2x1) <span class="bet-rate" id="info_2parlay"></span></div>
+                    <div class="stats-grid">
+                        <div><div class="stat-label">WIN NET</div><div class="stat-num c-profit" id="prof_2parlay">0</div></div>
+                        <div><div class="stat-label">MATH EV</div><div class="stat-num" id="ev_2parlay">0</div></div>
+                    </div>
+                    <div class="scenario-bar" style="border-color:var(--neon-green);">
+                        <span style="color:var(--neon-green);">>> JACKPOT (ALL WIN)</span>
+                        <span id="sc_2parlay">0</span>
+                    </div>
+                </div>
+                <div style="text-align:right; margin-left:15px; min-width:80px;">
+                    <div class="bet-val" id="bet_2parlay">0</div>
+                    <div class="bet-unit">UNITS</div>
+                </div>
+            </div>
+
+            <div class="total-panel">
+                <div style="font-size:0.8rem; letter-spacing:3px;">TOTAL EXPECTED VALUE</div>
+                <div class="total-val" id="total_ev_2">0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-3" class="view-section">
+        <div class="cyber-panel">
+            <div class="input-group"><label>T-01</label><div class="row"><input type="number" id="3g_odd1" placeholder="@"><select id="3g_rate1"><option value="S">S (75%)</option><option value="A" selected>A (60%)</option><option value="B">B (50%)</option><option value="C">DROP</option></select></div></div>
+            <div class="input-group"><label>T-02</label><div class="row"><input type="number" id="3g_odd2" placeholder="@"><select id="3g_rate2"><option value="S">S (75%)</option><option value="A" selected>A (60%)</option><option value="B">B (50%)</option><option value="C">DROP</option></select></div></div>
+            <div class="input-group"><label>T-03</label><div class="row"><input type="number" id="3g_odd3" placeholder="@"><select id="3g_rate3"><option value="S">S (75%)</option><option value="A" selected>A (60%)</option><option value="B">B (50%)</option><option value="C">DROP</option></select></div></div>
+            <button class="cyber-btn" onclick="calc3Game()">RUN PATENT SIM</button>
+        </div>
+
+        <div id="res-3" class="result-box">
+            <div class="section-header">/// ALLOCATION MATRIX</div>
+            <div id="bet_list_3"></div>
+
+            <div class="section-header">/// OUTCOME SIMULATION</div>
+            <div class="sc-grid">
+                <div class="sc-box"><div>WIN T-01</div><div class="sc-val" id="sc3_g1">0</div></div>
+                <div class="sc-box"><div>WIN T-02</div><div class="sc-val" id="sc3_g2">0</div></div>
+                <div class="sc-box"><div>WIN T-03</div><div class="sc-val" id="sc3_g3">0</div></div>
+                <div class="sc-box" style="opacity:0.3; border:none;">--</div>
+                <div class="sc-box"><div>PAIR 1+2</div><div class="sc-val" id="sc3_g1g2">0</div></div>
+                <div class="sc-box"><div>PAIR 1+3</div><div class="sc-val" id="sc3_g1g3">0</div></div>
+                <div class="sc-box"><div>PAIR 2+3</div><div class="sc-val" id="sc3_g2g3">0</div></div>
+                <div class="sc-box sc-full"><div>>>> COMPLETE VICTORY</div><div class="sc-val" id="sc3_all" style="font-size:1.5rem;">0</div></div>
+            </div>
+
+            <div class="total-panel">
+                <div style="font-size:0.8rem; letter-spacing:3px;">TOTAL EXPECTED VALUE</div>
+                <div class="total-val" id="total_ev_3">0.00</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- CORE LOGIC (V4.1) ---
+    const config = { 'S': { w: 5, p: 0.75 }, 'A': { w: 3, p: 0.60 }, 'B': { w: 1, p: 0.50 }, 'C': { w: 0, p: 0.30 } };
+    const budget = 30;
+
+    function switchTab(mode) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        document.querySelector(`.tab-btn:nth-child(${mode === 2 ? 1 : 2})`).classList.add('active');
+        document.getElementById(`view-${mode}`).classList.add('active');
+    }
+
+    // 2 Game Calculation
+    function calc2Game() {
+        const o1 = parseFloat(document.getElementById('2g_odd1').value);
+        const r1 = document.getElementById('2g_rate1').value;
+        const o2 = parseFloat(document.getElementById('2g_odd2').value);
+        const r2 = document.getElementById('2g_rate2').value;
+
+        if (!o1 || !r1 || !o2 || !r2) { alert("ERROR: INPUT DATA MISSING"); return; }
+
+        let w1 = config[r1].w, w2 = config[r2].w, wPar = 0;
+        if (w1 > 0 && w2 > 0) {
+            let base = (w1 + w2) / 2;
+            wPar = (w1 >= 3 && w2 >= 3) ? base * 1.2 : base * 0.8;
+        }
+
+        let totalW = w1 + w2 + wPar;
+        if (totalW === 0) { alert("STATUS: ABORT (LOW RATING)"); return; }
+
+        let b1 = parseFloat(((w1 / totalW) * budget).toFixed(1));
+        let b2 = parseFloat(((w2 / totalW) * budget).toFixed(1));
+        let bPar = parseFloat(((wPar / totalW) * budget).toFixed(1));
+
+        let diff = parseFloat((budget - (b1 + b2 + bPar)).toFixed(1));
+        if (diff !== 0) {
+            let max = Math.max(b1, b2, bPar);
+            if (b1 === max) b1 += diff; else if (b2 === max) b2 += diff; else bPar += diff;
+        }
+
+        const pOdds = o1 * o2;
+        const profit1 = b1 * (o1 - 1);
+        const profit2 = b2 * (o2 - 1);
+        const profitP = bPar * (pOdds - 1);
+
+        const ev1 = (b1 * o1 * config[r1].p) - b1;
+        const ev2 = (b2 * o2 * config[r2].p) - b2;
+        const evP = (bPar * pOdds * config[r1].p * config[r2].p) - bPar;
+        
+        const scG1 = (b1 * o1) - budget;
+        const scG2 = (b2 * o2) - budget;
+        const scAll = (b1 * o1) + (b2 * o2) + (bPar * pOdds) - budget;
+
+        const updateUI = (id, info, bet, prof, ev, sc, rate) => {
+            document.getElementById(`info_${id}`).innerText = info;
+            document.getElementById(`bet_${id}`).innerText = bet.toFixed(1);
+            document.getElementById(`prof_${id}`).innerText = "+" + prof.toFixed(1);
+            
+            let evEl = document.getElementById(`ev_${id}`);
+            evEl.innerText = (ev>=0?"+":"") + ev.toFixed(1);
+            evEl.className = ev>=0 ? "stat-num c-pos" : "stat-num c-neg";
+
+            let scEl = document.getElementById(`sc_${id}`);
+            scEl.innerText = (sc>=0?"+":"") + sc.toFixed(1);
+            scEl.className = sc>=0 ? "c-pos" : "c-neg";
+
+            let card = document.getElementById(`card_${id}`);
+            if (rate === 'S' || (id === '2parlay' && bet > 8)) card.classList.add('highlight');
+            else card.classList.remove('highlight');
+        };
+
+        updateUI('2g1', `@${o1} (${r1})`, b1, profit1, ev1, scG1, r1);
+        updateUI('2g2', `@${o2} (${r2})`, b2, profit2, ev2, scG2, r2);
+        updateUI('2parlay', `@${pOdds.toFixed(2)}`, bPar, profitP, evP, scAll, '');
+
+        let totEv = ev1 + ev2 + evP;
+        let totEl = document.getElementById('total_ev_2');
+        totEl.innerText = (totEv>=0?"+":"") + totEv.toFixed(1);
+        totEl.style.color = totEv>=0 ? 'var(--neon-green)' : 'var(--neon-pink)';
+        
+        document.getElementById('res-2').style.display = 'block';
+    }
+
+    // 3 Game Calculation
+    function calc3Game() {
+        const inputs = [1, 2, 3].map(i => ({
+            odds: parseFloat(document.getElementById(`3g_odd${i}`).value),
+            rate: document.getElementById(`3g_rate${i}`).value
+        }));
+        if (inputs.some(x => !x.odds || !x.rate)) { alert("ERROR: INPUT DATA MISSING"); return; }
+
+        let keys = ['G1', 'G2', 'G3', 'G1+G2', 'G1+G3', 'G2+G3', 'All 3'];
+        let weights = {}, odds = {}, probs = {};
+
+        inputs.forEach((inp, i) => {
+            let k = keys[i];
+            weights[k] = config[inp.rate].w;
+            odds[k] = inp.odds;
+            probs[k] = config[inp.rate].p;
+        });
+
+        [[0,1,3], [0,2,4], [1,2,5]].forEach(d => {
+            let i1 = inputs[d[0]], i2 = inputs[d[1]];
+            let k = keys[d[2]];
+            odds[k] = i1.odds * i2.odds;
+            probs[k] = config[i1.rate].p * config[i2.rate].p;
+            let w1 = config[i1.rate].w, w2 = config[i2.rate].w;
+            if (w1 === 0 || w2 === 0) weights[k] = 0;
+            else weights[k] = ((w1+w2)/2) * ((w1>=3 && w2>=3) ? 1.0 : 0.6);
+        });
+
+        let k3 = 'All 3';
+        odds[k3] = inputs[0].odds * inputs[1].odds * inputs[2].odds;
+        probs[k3] = inputs.reduce((a,b)=>a*config[b.rate].p, 1);
+        let wArr = inputs.map(i=>config[i.rate].w);
+        if (wArr.includes(0)) weights[k3] = 0;
+        else weights[k3] = (wArr.reduce((a,b)=>a+b,0)/3) * (wArr.every(w=>w>=3) ? 1.2 : 0.5);
+
+        let totalW = Object.values(weights).reduce((a,b)=>a+b,0);
+        if (totalW === 0) { alert("STATUS: ABORT"); return; }
+
+        let bets = {};
+        let sum = 0;
+        keys.forEach(k => {
+            bets[k] = parseFloat(((weights[k]/totalW)*budget).toFixed(1));
+            sum += bets[k];
+        });
+        
+        let diff = parseFloat((budget - sum).toFixed(1));
+        if (diff !== 0) bets[keys.reduce((a,b)=>weights[a]>weights[b]?a:b)] += diff;
+
+        let html = '';
+        let totEv = 0;
+        keys.forEach(k => {
+            if (bets[k] > 0) {
+                let ev = (bets[k]*odds[k]*probs[k]) - bets[k];
+                totEv += ev;
+                let hl = bets[k] >= 4 ? 'highlight' : '';
+                html += `
+                <div class="bet-row ${hl}">
+                    <div style="flex:1;">
+                        <div class="bet-name">${k} <span class="bet-rate">@${odds[k].toFixed(2)}</span></div>
+                        <div class="stats-grid">
+                            <div><div class="stat-label">MATH EV</div><div class="stat-num ${ev>=0?'c-pos':'c-neg'}">${ev>=0?'+':''}${ev.toFixed(1)}</div></div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="bet-val">${bets[k].toFixed(1)}</div>
+                    </div>
+                </div>`;
+            }
+        });
+        document.getElementById('bet_list_3').innerHTML = html;
+
+        const calcSc = (wins) => {
+            let ret = 0;
+            wins.forEach(k => ret += (bets[k]*odds[k]));
+            return ret - budget;
+        }
+
+        const renderSc = (id, val) => {
+            let el = document.getElementById(id);
+            el.innerText = (val>=0?"+":"") + val.toFixed(1);
+            el.className = "sc-val " + (val>=0?"c-pos":"c-neg");
+        };
+
+        renderSc('sc3_g1', calcSc(['G1']));
+        renderSc('sc3_g2', calcSc(['G2']));
+        renderSc('sc3_g3', calcSc(['G3']));
+        renderSc('sc3_g1g2', calcSc(['G1','G2','G1+G2']));
+        renderSc('sc3_g1g3', calcSc(['G1','G3','G1+G3']));
+        renderSc('sc3_g2g3', calcSc(['G2','G3','G2+G3']));
+        renderSc('sc3_all', calcSc(keys));
+
+        let totEl = document.getElementById('total_ev_3');
+        totEl.innerText = (totEv>=0?"+":"") + totEv.toFixed(1);
+        totEl.style.color = totEv>=0 ? 'var(--neon-green)' : 'var(--neon-pink)';
+
+        document.getElementById('res-3').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
